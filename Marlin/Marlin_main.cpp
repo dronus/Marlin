@@ -2223,18 +2223,21 @@ void clamp_to_software_endstops(float target[3])
 #ifdef DELTA
 void calculate_delta(float cartesian[3])
 {
-  delta[X_AXIS] = sqrt(sq(DELTA_DIAGONAL_ROD)
-                       - sq(DELTA_TOWER1_X-cartesian[X_AXIS])
-                       - sq(DELTA_TOWER1_Y-cartesian[Y_AXIS])
-                       ) + cartesian[Z_AXIS];
-  delta[Y_AXIS] = sqrt(sq(DELTA_DIAGONAL_ROD)
-                       - sq(DELTA_TOWER2_X-cartesian[X_AXIS])
-                       - sq(DELTA_TOWER2_Y-cartesian[Y_AXIS])
-                       ) + cartesian[Z_AXIS];
-  delta[Z_AXIS] = sqrt(sq(DELTA_DIAGONAL_ROD)
-                       - sq(DELTA_TOWER3_X-cartesian[X_AXIS])
-                       - sq(DELTA_TOWER3_Y-cartesian[Y_AXIS])
-                       ) + cartesian[Z_AXIS];
+  delta[X_AXIS] = DELTA_DIAGONAL_ROD-sqrt(
+                         sq(DELTA_TOWER1_X-cartesian[X_AXIS])
+                       + sq(DELTA_TOWER1_Y-cartesian[Y_AXIS])
+                       + sq(DELTA_TOWER1_Z-cartesian[Z_AXIS]-Z_MAX_POS)              
+                       );
+  delta[Y_AXIS] = DELTA_DIAGONAL_ROD-sqrt(
+                         sq(DELTA_TOWER2_X-cartesian[X_AXIS])
+                       + sq(DELTA_TOWER2_Y-cartesian[Y_AXIS])
+                       + sq(DELTA_TOWER2_Z-cartesian[Z_AXIS]-Z_MAX_POS)
+                       );
+  delta[Z_AXIS] = DELTA_DIAGONAL_ROD-sqrt(
+                         sq(DELTA_TOWER3_X-cartesian[X_AXIS])
+                       + sq(DELTA_TOWER3_Y-cartesian[Y_AXIS])
+                       + sq(DELTA_TOWER3_Z-cartesian[Z_AXIS]-Z_MAX_POS)
+                       );
   /*
   SERIAL_ECHOPGM("cartesian x="); SERIAL_ECHO(cartesian[X_AXIS]);
   SERIAL_ECHOPGM(" y="); SERIAL_ECHO(cartesian[Y_AXIS]);

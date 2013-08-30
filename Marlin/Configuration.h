@@ -81,29 +81,25 @@
 #define DELTA_SEGMENTS_PER_SECOND 200
 
 // Center-to-center distance of the holes in the diagonal push rods.
-#define DELTA_DIAGONAL_ROD 215.0 // mm
+#define DELTA_DIAGONAL_ROD 330.0 // mm
 
-// Horizontal offset from middle of printer to smooth rod center.
-#define DELTA_SMOOTH_ROD_OFFSET 145.0 // mm
-
-// Horizontal offset of the universal joints on the end effector.
-#define DELTA_EFFECTOR_OFFSET 19.9 // mm
-
-// Horizontal offset of the universal joints on the carriages.
-#define DELTA_CARRIAGE_OFFSET 19.5 // mm
+#define DELTA_HEIGHT 160.0 // mm
 
 // Effective horizontal distance bridged by diagonal push rods.
-#define DELTA_RADIUS (DELTA_SMOOTH_ROD_OFFSET-DELTA_EFFECTOR_OFFSET-DELTA_CARRIAGE_OFFSET)
+#define DELTA_RADIUS 270.0 
 
 // Effective X/Y positions of the three vertical towers.
 #define SIN_60 0.8660254037844386
 #define COS_60 0.5
 #define DELTA_TOWER1_X -SIN_60*DELTA_RADIUS // front left tower
 #define DELTA_TOWER1_Y -COS_60*DELTA_RADIUS
+#define DELTA_TOWER1_Z DELTA_HEIGHT
 #define DELTA_TOWER2_X SIN_60*DELTA_RADIUS // front right tower
 #define DELTA_TOWER2_Y -COS_60*DELTA_RADIUS
+#define DELTA_TOWER2_Z DELTA_HEIGHT
 #define DELTA_TOWER3_X 0.0 // back middle tower
 #define DELTA_TOWER3_Y DELTA_RADIUS
+#define DELTA_TOWER3_Z DELTA_HEIGHT
 
 //===========================================================================
 //=============================Thermal Settings  ============================
@@ -315,11 +311,11 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
 #define min_software_endstops true // If true, axis won't move to coordinates less than HOME_POS.
 #define max_software_endstops true  // If true, axis won't move to coordinates greater than the defined lengths below.
 // Travel limits after homing
-#define X_MAX_POS 90
-#define X_MIN_POS -90
-#define Y_MAX_POS 90
-#define Y_MIN_POS -90
-#define Z_MAX_POS MANUAL_Z_HOME_POS
+#define X_MAX_POS 190
+#define X_MIN_POS -190
+#define Y_MAX_POS 190
+#define Y_MIN_POS -190
+#define Z_MAX_POS 250
 #define Z_MIN_POS 0
 
 #define X_MAX_LENGTH (X_MAX_POS - X_MIN_POS)
@@ -334,19 +330,19 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
 // For deltabots this means top and center of the cartesian print volume.
 #define MANUAL_X_HOME_POS 0
 #define MANUAL_Y_HOME_POS 0
-#define MANUAL_Z_HOME_POS 250  // For delta: Distance between nozzle and print surface after homing.
+#define MANUAL_Z_HOME_POS 0  // For delta: Distance between nozzle and print surface after homing.
 
 //// MOVEMENT SETTINGS
 #define NUM_AXIS 4 // The axis order in all axis related arrays is X, Y, Z, E
-#define HOMING_FEEDRATE {20*60, 20*60, 20*60, 0}  // set the homing speeds (mm/min)
+#define HOMING_FEEDRATE {3*60, 3*60, 3*60, 0}  // set the homing speeds (mm/min)
 
 #define Z_PROBE_OFFSET {0, -13.6, -6.4, 0}  // Distance between hotend nozzle and deployed bed leveling probe.
 
 // default settings
 
-#define DEFAULT_AXIS_STEPS_PER_UNIT   {60, 60, 60, 375}
-#define DEFAULT_MAX_FEEDRATE          {100, 100, 100, 25}    // (mm/sec)
-#define DEFAULT_MAX_ACCELERATION      {200,200,200,1000}    // X, Y, Z, E maximum start speed for accelerated moves. E default values are good for skeinforge 40+, for older versions raise them a lot.
+#define DEFAULT_AXIS_STEPS_PER_UNIT   {600, 600, 600, 375}
+#define DEFAULT_MAX_FEEDRATE          {5, 5, 5, 25}    // (mm/sec)
+#define DEFAULT_MAX_ACCELERATION      {10,10,10,40}    // X, Y, Z, E maximum start speed for accelerated moves. E default values are good for skeinforge 40+, for older versions raise them a lot.
 
 #define DEFAULT_ACCELERATION          3000    // X, Y, Z and E max acceleration in mm/s^2 for printing moves
 #define DEFAULT_RETRACT_ACCELERATION  3000   // X, Y, Z and E max acceleration in mm/s^2 for retracts
