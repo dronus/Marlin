@@ -78,15 +78,16 @@
 // Make delta curves from many straight lines (linear interpolation).
 // This is a trade-off between visible corners (not enough segments)
 // and processor overload (too many expensive sqrt calls).
-#define DELTA_SEGMENTS_PER_SECOND 200
+#define DELTA_SEGMENTS_PER_SECOND 100
 
-// Center-to-center distance of the holes in the diagonal push rods.
-#define DELTA_DIAGONAL_ROD 330.0 // mm
+#define DELTA_HEIGHT      500.0 // mm height of the pulleys above bed
+#define DELTA_HOME_Z      200.0 // mm height of the homing position above bed
+#define DELTA_RADIUS      600.0 // mm distance from the machine center axis to the pulleys
+                                //    as there is no 'DELTA_HEAD_RADIUS', the head radius has to be subtracted from DELTA_RADIUS.
 
-#define DELTA_HEIGHT 160.0 // mm
-
-// Effective horizontal distance bridged by diagonal push rods.
-#define DELTA_RADIUS 270.0 
+#define DELTA_HOME_WIRE_LENGTH (sqrt(sq(DELTA_RADIUS)+sq(DELTA_HEIGHT-DELTA_HOME_Z)))
+#define DELTA_WIRE_WORKING_LENGTH 300 // mm wire length that can be driven (eg. belt length)
+#define DELTA_WIRE_MAX_LENGTH DELTA_HOME_WIRE_LENGTH+DELTA_WIRE_WORKING_LENGTH // mm maximal wire length limit if fully unreeled
 
 // Effective X/Y positions of the three vertical towers.
 #define SIN_60 0.8660254037844386
@@ -235,7 +236,7 @@
 
 //this prevents dangerous Extruder moves, i.e. if the temperature is under the limit
 //can be software-disabled for whatever purposes by
-#define PREVENT_DANGEROUS_EXTRUDE
+//#define PREVENT_DANGEROUS_EXTRUDE
 //if PREVENT_DANGEROUS_EXTRUDE is on, you can still disable (uncomment) very long bits of extrusion separately.
 #define PREVENT_LENGTHY_EXTRUDE
 
@@ -304,9 +305,9 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
 
 // ENDSTOP SETTINGS:
 // Sets direction of endstops when homing; 1=MAX, -1=MIN
-#define X_HOME_DIR 1
-#define Y_HOME_DIR 1
-#define Z_HOME_DIR 1
+#define X_HOME_DIR -1
+#define Y_HOME_DIR -1
+#define Z_HOME_DIR -1
 
 #define min_software_endstops true // If true, axis won't move to coordinates less than HOME_POS.
 #define max_software_endstops true  // If true, axis won't move to coordinates greater than the defined lengths below.
@@ -328,9 +329,9 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
 
 //Manual homing switch locations:
 // For deltabots this means top and center of the cartesian print volume.
-#define MANUAL_X_HOME_POS 0
-#define MANUAL_Y_HOME_POS 0
-#define MANUAL_Z_HOME_POS 0  // For delta: Distance between nozzle and print surface after homing.
+#define MANUAL_X_HOME_POS DELTA_HOME_WIRE_LENGTH
+#define MANUAL_Y_HOME_POS DELTA_HOME_WIRE_LENGTH
+#define MANUAL_Z_HOME_POS DELTA_HOME_WIRE_LENGTH
 
 //// MOVEMENT SETTINGS
 #define NUM_AXIS 4 // The axis order in all axis related arrays is X, Y, Z, E
@@ -340,12 +341,12 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
 
 // default settings
 
-#define DEFAULT_AXIS_STEPS_PER_UNIT   {600, 600, 600, 375}
-#define DEFAULT_MAX_FEEDRATE          {5, 5, 5, 25}    // (mm/sec)
+#define DEFAULT_AXIS_STEPS_PER_UNIT   {133,333333333 , 133,333333333, 133,333333333, 375}  // 12 teeth pulley, 1600 microsteps per rev
+#define DEFAULT_MAX_FEEDRATE          {10, 10, 10, 25}    // (mm/sec)
 #define DEFAULT_MAX_ACCELERATION      {10,10,10,40}    // X, Y, Z, E maximum start speed for accelerated moves. E default values are good for skeinforge 40+, for older versions raise them a lot.
 
-#define DEFAULT_ACCELERATION          3000    // X, Y, Z and E max acceleration in mm/s^2 for printing moves
-#define DEFAULT_RETRACT_ACCELERATION  3000   // X, Y, Z and E max acceleration in mm/s^2 for retracts
+#define DEFAULT_ACCELERATION          10    // X, Y, Z and E max acceleration in mm/s^2 for printing moves
+#define DEFAULT_RETRACT_ACCELERATION  10   // X, Y, Z and E max acceleration in mm/s^2 for retracts
 
 // Offset of the extruders (uncomment if using more than one and relying on firmware to position when changing).
 // The offset has to be X=0, Y=0 for the extruder 0 hotend (default extruder).
@@ -354,8 +355,8 @@ const bool Z_ENDSTOPS_INVERTING = false; // set to true to invert the logic of t
 // #define EXTRUDER_OFFSET_Y {0.0, 5.00}  // (in mm) for each extruder, offset of the hotend on the Y axis
 
 // The speed change that does not require acceleration (i.e. the software might assume it can be done instantaneously)
-#define DEFAULT_XYJERK                20.0    // (mm/sec)
-#define DEFAULT_ZJERK                 20.0    // (mm/sec)
+#define DEFAULT_XYJERK                0.4    // (mm/sec)
+#define DEFAULT_ZJERK                 0.4    // (mm/sec)
 #define DEFAULT_EJERK                 5.0    // (mm/sec)
 
 //===========================================================================

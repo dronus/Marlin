@@ -919,18 +919,17 @@ void process_commands()
           feedrate = 0.0;
 
 #ifdef DELTA
-          // A delta can only safely home all axis at the same time
-          // all axis have to home at the same time
-
-          // Move all carriages up together until the first endstop is hit.
-          current_position[X_AXIS] = 0;
-          current_position[Y_AXIS] = 0;
-          current_position[Z_AXIS] = 0;
+          // A rope delta can only safely home all axis at the same time
+      
+          // Pull all wires in together until the first endstop is hit.
+          current_position[X_AXIS] =  DELTA_WIRE_WORKING_LENGTH;
+          current_position[Y_AXIS] =  DELTA_WIRE_WORKING_LENGTH;
+          current_position[Z_AXIS] =  DELTA_WIRE_WORKING_LENGTH;
           plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]); 
 
-          destination[X_AXIS] = 3 * Z_MAX_LENGTH;
-          destination[Y_AXIS] = 3 * Z_MAX_LENGTH;
-          destination[Z_AXIS] = 3 * Z_MAX_LENGTH;
+          destination[X_AXIS] = 0;
+          destination[Y_AXIS] = 0;
+          destination[Z_AXIS] = 0;
           feedrate = 1.732 * homing_feedrate[X_AXIS];
           plan_buffer_line(destination[X_AXIS], destination[Y_AXIS], destination[Z_AXIS], destination[E_AXIS], feedrate/60, active_extruder);
           st_synchronize();
@@ -945,6 +944,11 @@ void process_commands()
           HOMEAXIS(Y);
           HOMEAXIS(Z);
 
+          // set known position to cartesian homing position
+          current_position[X_AXIS] = 0;
+          current_position[Y_AXIS] = 0;
+          current_position[Z_AXIS] = DELTA_HOME_Z;
+          
           calculate_delta(current_position);
           plan_set_position(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS], current_position[E_AXIS]);
 
@@ -2221,23 +2225,71 @@ void clamp_to_software_endstops(float target[3])
 }
 
 #ifdef DELTA
-void calculate_delta(float cartesian[3])
+boolean calculate_delta(float cartesian[3])
 {
-  delta[X_AXIS] = DELTA_DIAGONAL_ROD-sqrt(
-                         sq(DELTA_TOWER1_X-cartesian[X_AXIS])
-                       + sq(DELTA_TOWER1_Y-cartesian[Y_AXIS])
-                       + sq(DELTA_TOWER1_Z-cartesian[Z_AXIS]-Z_MAX_POS)              
-                       );
-  delta[Y_AXIS] = DELTA_DIAGONAL_ROD-sqrt(
-                         sq(DELTA_TOWER2_X-cartesian[X_AXIS])
-                       + sq(DELTA_TOWER2_Y-cartesian[Y_AXIS])
-                       + sq(DELTA_TOWER2_Z-cartesian[Z_AXIS]-Z_MAX_POS)
-                       );
-  delta[Z_AXIS] = DELTA_DIAGONAL_ROD-sqrt(
-                         sq(DELTA_TOWER3_X-cartesian[X_AXIS])
-                       + sq(DELTA_TOWER3_Y-cartesian[Y_AXIS])
-                       + sq(DELTA_TOWER3_Z-cartesian[Z_AXIS]-Z_MAX_POS)
-                       );
+  
+  // calculate the delta rope wire length's for each axis.
+  
+  // what we have: the cartesian corrdinates, pulley tower positions, home wire length, top wire length
+  
+  // how much wire do we unreel? 
+  // We just take the distance of the wire pulley to the head, which gives our reference value.
+  // The offset of wire length is already adjusted by the homing procedure, which sets the position to HOME_WIRE_LENGTH
+  // and thus the offset of wire length that would stay if the head would reach pulley height (wich is impossible).
+  delta[X_AXIS] = sqrt(
+                       sq(DELTA_TOWER1_X-cartesian[X_AXIS])
+                     + sq(DELTA_TOWER1_Y-cartesian[Y_AXIS])
+                     + sq(DELTA_TOWER1_Z-cartesian[Z_AXIS])
+                  );
+  delta[Y_AXIS] = sqrt(
+                       sq(DELTA_TOWER2_X-cartesian[X_AXIS])
+                     + sq(DELTA_TOWER2_Y-cartesian[Y_AXIS])
+                     + sq(DELTA_TOWER2_Z-cartesian[Z_AXIS])
+                   );
+  delta[Z_AXIS] = sqrt(
+                       sq(DELTA_TOWER3_X-cartesian[X_AXIS])
+                     + sq(DELTA_TOWER3_Y-cartesian[Y_AXIS])
+                     + sq(DELTA_TOWER3_Z-cartesian[Z_AXIS])
+                   );
+                   
+  // do some safety checks...
+
+  // there are several possible 'short wire' checks:
+  
+  if(delta[X_AXIS]<=0 || delta[Y_AXIS]<=0 || delta[Z_AXIS]<=0)
+  {
+    // a wire will be totally pulled in. that can't be right...
+    SERIAL_ERROR_START;
+    SERIAL_ERRORLNPGM("DELTA ERROR: Wire length below 0");
+    Stop();
+    return false;
+  }
+
+  if(delta[X_AXIS]<=DELTA_HOME_WIRE_LENGTH || delta[Y_AXIS]<=DELTA_HOME_WIRE_LENGTH || delta[Z_AXIS]<=DELTA_HOME_WIRE_LENGTH) 
+  {
+    // a wires is shorter then it was at homing. this restricts the working area to some pinched cone 
+    // with the homing position at its top, and somewhat limits the maximal wire forces to the homing force.
+    SERIAL_ERROR_START;
+    SERIAL_ERRORLNPGM("DELTA ERROR: Wire length below homing length");
+    Stop();
+    return false;
+  }
+  
+  if(delta[X_AXIS]>DELTA_WIRE_MAX_LENGTH || delta[Y_AXIS]>DELTA_WIRE_MAX_LENGTH  || delta[Z_AXIS]>DELTA_WIRE_MAX_LENGTH )  
+  {
+    // a wire will exceed the working length 
+    // this is a limit imposed by the wire drives.
+    SERIAL_ERROR_START;
+    SERIAL_ERRORLNPGM("DELTA ERROR: Wire length above DELTA_WIRE_MAX_LENGTH");
+    Stop();
+    return false;
+  }
+
+  // now we should test if the estimated wire force will not exceed or go below some given force.
+  // a wire with too much force will break something. a wire with too less force will curl.
+  // we don't do this check now as it requires many many more sqrt(..)'s then needed to do the actual driving.
+  // the formula for each rope would be: force=sqrt(1+sq(x)/sq(y)) * 1/(y/x-y/(x-1))  with x,y cartesian ratio in the rope's plane
+  
   /*
   SERIAL_ECHOPGM("cartesian x="); SERIAL_ECHO(cartesian[X_AXIS]);
   SERIAL_ECHOPGM(" y="); SERIAL_ECHO(cartesian[Y_AXIS]);
@@ -2247,6 +2299,7 @@ void calculate_delta(float cartesian[3])
   SERIAL_ECHOPGM(" y="); SERIAL_ECHO(delta[Y_AXIS]);
   SERIAL_ECHOPGM(" z="); SERIAL_ECHOLN(delta[Z_AXIS]);
   */
+  return true;
 }
 
 // Adjust print surface height by linear interpolation over the bed_level array.
@@ -2325,11 +2378,13 @@ void prepare_move()
     for(int8_t i=0; i < NUM_AXIS; i++) {
       destination[i] = current_position[i] + difference[i] * fraction;
     }
-    calculate_delta(destination);
-    adjust_delta(destination);
-    plan_buffer_line(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS],
-                     destination[E_AXIS], feedrate*feedmultiply/60/100.0,
-                     active_extruder);
+    boolean valid_position=calculate_delta(destination);
+    if(valid_position){
+      adjust_delta(destination);
+      plan_buffer_line(delta[X_AXIS], delta[Y_AXIS], delta[Z_AXIS],
+                       destination[E_AXIS], feedrate*feedmultiply/60/100.0,
+                       active_extruder);
+    }
   }
 #else
   // Do not use feedmultiply for E or Z only moves
